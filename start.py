@@ -5,6 +5,9 @@ from pyppeteer import connect
 from logger import setup_logger
 import json
 import os
+import random
+
+URL = "https://dexscreener.com/solana?rankBy=trendingScoreH6&order=desc"
 
 logger = setup_logger()
 
@@ -91,6 +94,58 @@ async def get_ws_url():
 
 
 async def manipul(page):
+    # category = {
+    #     'token': 'ds-dex-table-row-base-token-symbol',
+    #     'price': 'price',
+    #     'pair-age': 'pair-age', 
+    #     'txns': 'txns', 
+    #     'volume': 'volume',
+    #     'makers': 'makers', 
+    #     'price-change-m5': 'price-change-m5', 
+    #     'price-change-h1': 'price-change-h1', 
+    #     'price-change-h6': 'price-change-h6', 
+    #     'price-change-h24': 'price-change-h24',
+    #     'liquidity': 'liquidity',
+    #     'market-cap': 'market-cap',
+    # }
+
+    # await asyncio.sleep(random.uniform(0.91, 1.82))
+
+    await page.waitForSelector('a.ds-dex-table-row.ds-dex-table-row-top', {'timeout': 10000})
+
+
+    data = await page.evaluate("""
+    () => Array.from(document.querySelectorAll('a.ds-dex-table-row.ds-dex-table-row-top')).map(row => ({
+    token: row.querySelector('.ds-dex-table-row-base-token-symbol')?.innerText.trim() ?? null,
+    age: row.querySelector('.ds-table-data-cell.ds-dex-table-row-col-pair-age')?.innerText.trim() ?? null,
+    marketCap: row.querySelector('.ds-table-data-cell.ds-dex-table-row-col-market-cap')?.innerText.trim() ?? null,
+    }))
+    """)
+    # print(data)
+    
+    for i in data:
+        print(f'{i['token']} - {i['marketCap']} - {i['age']}')
+        
+
+async def start_browser():
+    try:
+        ws = await get_ws_url()
+        browser = await connect(
+            browserWSEndpoint=ws
+        )
+
+        page = (await browser.pages())[0]
+
+        await page.goto(URL)
+
+        await open_page(page)
+
+    except Exception as e:
+        print(e)
+    finally:
+        await browser.close()
+
+async def open_page(page):
     text_of_pairs = await find_element(
         page, 
         "//div[contains(@class, 'chakra-stack custom-tyhwsl')]",
@@ -102,61 +157,16 @@ async def manipul(page):
     
     print(amount_of_pages)
 
-    category = {
-        'token': 'ds-dex-table-row-base-token-symbol',
-        'price': 'price',
-        'pair-age': 'pair-age', 
-        'txns': 'txns', 
-        'volume': 'volume',
-        'makers': 'makers', 
-        'price-change-m5': 'price-change-m5', 
-        'price-change-h1': 'price-change-h1', 
-        'price-change-h6': 'price-change-h6', 
-        'price-change-h24': 'price-change-h24',
-        'liquidity': 'liquidity',
-        'market-cap': 'market-cap',
-    }
+    await manipul(page)
 
-    # list_of_tokens = await find_element(
-    #     page,
-    #     "//div[contains(@class, 'ds-dex-table ds-dex-table-top')]" \
-    #     "//a[contains(@class, 'ds-dex-table-row ds-dex-table-row-top')]" \
-    #     f".//span[contains(@class, '{category['token']}')]",
-    #     # f".//span[contains(@class, '{category['0']+category['market-cap']}')]" , 
-    #     True,
-    #     get_all_matches=True,
-    #     get_text=True
-    # )
+    for i in range(2, amount_of_pages+1):
+        url = URL.split('?')
+        url[0] += '/page-'+str(i)
+        url = '?'.join(url)
 
-    data = await page.evaluate("""
-    () => Array.from(document.querySelectorAll('a.ds-dex-table-row.ds-dex-table-row-top')).map(row => ({
-    token:     row.querySelector('.ds-dex-table-row-base-token-symbol')?.innerText.trim() ?? null,
-    marketCap: row.querySelector('.ds-table-data-cell.ds-dex-table-row-col-market-cap')?.innerText.trim() ?? null,
-    }))
-    """)
-    
-    for i in data:
-        print(f'{i['token']} - {i['marketCap']}')
-        
-
-async def start():
-    try:
-        ws = await get_ws_url()
-        browser = await connect(
-            browserWSEndpoint=ws
-        )
-
-        page = (await browser.pages())[0]
-
-        URL = "https://dexscreener.com/solana/"
-
-        await page.goto(URL)
+        page.setDefaultNavigationTimeout(0)
+        await page.goto(url, {'waitUntil': 'domcontentloaded'})
 
         await manipul(page)
 
-    except Exception as e:
-        print(e)
-    finally:
-        await browser.close()
-
-asyncio.run(start())
+asyncio.run(start_browser())
