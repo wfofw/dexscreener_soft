@@ -102,15 +102,41 @@ async def manipul(page):
     
     print(amount_of_pages)
 
-    list_of_tokens = await find_element(
-        page,
-        "//div[contains(@class, 'ds-dex-table ds-dex-table-top')]//a[contains(@class, 'ds-dex-table-row ds-dex-table-row-top')]//span[contains(@class, 'ds-dex-table-row-base-token-symbol')]", 
-        True,
-        get_all_matches=True,
-        get_text=True
-    )
+    category = {
+        'token': 'ds-dex-table-row-base-token-symbol',
+        'price': 'price',
+        'pair-age': 'pair-age', 
+        'txns': 'txns', 
+        'volume': 'volume',
+        'makers': 'makers', 
+        'price-change-m5': 'price-change-m5', 
+        'price-change-h1': 'price-change-h1', 
+        'price-change-h6': 'price-change-h6', 
+        'price-change-h24': 'price-change-h24',
+        'liquidity': 'liquidity',
+        'market-cap': 'market-cap',
+    }
 
-    print(list_of_tokens)
+    # list_of_tokens = await find_element(
+    #     page,
+    #     "//div[contains(@class, 'ds-dex-table ds-dex-table-top')]" \
+    #     "//a[contains(@class, 'ds-dex-table-row ds-dex-table-row-top')]" \
+    #     f".//span[contains(@class, '{category['token']}')]",
+    #     # f".//span[contains(@class, '{category['0']+category['market-cap']}')]" , 
+    #     True,
+    #     get_all_matches=True,
+    #     get_text=True
+    # )
+
+    data = await page.evaluate("""
+    () => Array.from(document.querySelectorAll('a.ds-dex-table-row.ds-dex-table-row-top')).map(row => ({
+    token:     row.querySelector('.ds-dex-table-row-base-token-symbol')?.innerText.trim() ?? null,
+    marketCap: row.querySelector('.ds-table-data-cell.ds-dex-table-row-col-market-cap')?.innerText.trim() ?? null,
+    }))
+    """)
+    
+    for i in data:
+        print(f'{i['token']} - {i['marketCap']}')
         
 
 async def start():

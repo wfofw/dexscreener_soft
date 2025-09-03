@@ -44,6 +44,6 @@ timeout /t 1 /nobreak >nul
 python start.py
 
 echo ================================
-echo ✅ Завершено!
+echo Завершено!
 echo ================================
 pause
