@@ -1,5 +1,6 @@
 @echo off
 chcp 65001 >nul
+setlocal enabledelayedexpansion
 
 python intro.py
 
@@ -34,8 +35,14 @@ python intro.py
 @REM echo 🚀 Запускаем проект...
 @REM echo ================================
 
+:: читаем CHROME_PORT из private.env
+for /f "tokens=1,2 delims==" %%a in (config.env) do (
+    if "%%a"=="CHROME_PORT" set CHROME_PORT=%%b
+)
+
+:: запускаем Chrome с портом из env
 start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" ^
-  --remote-debugging-port=11911 ^
+  --remote-debugging-port=%CHROME_PORT% ^
   --user-data-dir="C:\chrome-profile"
 
 @REM echo wait...
