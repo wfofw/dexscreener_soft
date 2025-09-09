@@ -3,13 +3,24 @@ import asyncio
 import aiohttp
 from pyppeteer import connect
 from logger import setup_logger
-import json
+import psycopg2
+import dotenv
 import os
-import random
+
+dotenv.load_dotenv('F:\\shitcode\\birge_api\\config.env')
 
 URL = "https://dexscreener.com/solana?rankBy=trendingScoreH6&order=desc"
 
 logger = setup_logger()
+
+def get_conn():
+    return psycopg2.connect(
+        host=os.getenv('DB_HOST'),
+        dbname=os.getenv('DB_NAME'),
+        port=os.getenv('DB_PORT'),
+        user=os.getenv('DB_USER'),
+        password=os.getenv('DB_PASSWORD')
+    )
 
 async def find_element(page_or_frame, selector, is_xpath=False, attempts=15, delay=1, click=False, get_text=False, get_all_matches=False, index=0, wait_time=1.5):
     """
@@ -88,29 +99,12 @@ async def find_element(page_or_frame, selector, is_xpath=False, attempts=15, del
 
 async def get_ws_url():
     async with aiohttp.ClientSession() as session:
-        async with session.get('http://localhost:11911/json/version') as resp:
+        async with session.get(f'http://localhost:{os.getenv('CHROME_PORT')}/json/version') as resp:
             data = await resp.json()
             return data['webSocketDebuggerUrl']
 
 
 async def manipul(page):
-    # category = {
-    #     'token': 'ds-dex-table-row-base-token-symbol',
-    #     'price': 'price',
-    #     'pair-age': 'pair-age', 
-    #     'txns': 'txns', 
-    #     'volume': 'volume',
-    #     'makers': 'makers', 
-    #     'price-change-m5': 'price-change-m5', 
-    #     'price-change-h1': 'price-change-h1', 
-    #     'price-change-h6': 'price-change-h6', 
-    #     'price-change-h24': 'price-change-h24',
-    #     'liquidity': 'liquidity',
-    #     'market-cap': 'market-cap',
-    # }
-
-    # await asyncio.sleep(random.uniform(0.91, 1.82))
-
     await page.waitForSelector('a.ds-dex-table-row.ds-dex-table-row-top', {'timeout': 10000})
 
 
@@ -121,10 +115,22 @@ async def manipul(page):
     marketCap: row.querySelector('.ds-table-data-cell.ds-dex-table-row-col-market-cap')?.innerText.trim() ?? null,
     }))
     """)
-    # print(data)
     
-    for i in data:
-        print(f'{i['token']} - {i['marketCap']} - {i['age']}')
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            counter = 1
+            for i in data[:100]:
+                print(f'{i['token']} - {i['marketCap']} - {i['age']}')
+                cur.execute(
+                    "INSERT INTO newtb (tokenID, tokenname, tokenage, tokenmcap) " \
+                    f"VALUES ({counter}, '{i['token']}', '{i['age']}', '{i['marketCap']}');"
+                )
+                counter+=1
+
+    # return
+    
+    # for i in data:
+    #     print(f'{i['token']} - {i['marketCap']} - {i['age']}')
         
 
 async def start_browser():
@@ -138,14 +144,12 @@ async def start_browser():
 
         await page.goto(URL)
 
-        await open_page(page)
+        await open_page(page, browser)
 
     except Exception as e:
         print(e)
-    finally:
-        await browser.close()
 
-async def open_page(page):
+async def open_page(page, browser):
     text_of_pairs = await find_element(
         page, 
         "//div[contains(@class, 'chakra-stack custom-tyhwsl')]",
@@ -159,7 +163,7 @@ async def open_page(page):
 
     await manipul(page)
 
-    for i in range(2, amount_of_pages+1):
+    for i in range(2, 50):
         url = URL.split('?')
         url[0] += '/page-'+str(i)
         url = '?'.join(url)
@@ -168,5 +172,7 @@ async def open_page(page):
         await page.goto(url, {'waitUntil': 'domcontentloaded'})
 
         await manipul(page)
+    
+    await browser.close()
 
 asyncio.run(start_browser())
