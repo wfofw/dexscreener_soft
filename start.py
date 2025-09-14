@@ -6,6 +6,7 @@ from logger import setup_logger
 import psycopg2
 import dotenv
 import os
+import re
 
 dotenv.load_dotenv('F:\\shitcode\\birge_api\\config.env')
 
@@ -121,9 +122,12 @@ async def manipul(page):
             counter = 1
             for i in data[:100]:
                 print(f'{i['token']} - {i['marketCap']} - {i['age']}')
+                token_name = i['token']
+                age, age_unit = re.match(r"(\d+)([a-zA-Z]+)", f'{i['age']}').groups()
+                mcap, mcap_unit = re.match(r"([\d\.]+)([a-zA-Z]+)", i['marketCap'][1:]).groups()
                 cur.execute(
-                    "INSERT INTO newtb (tokenID, tokenname, tokenage, tokenmcap) " \
-                    f"VALUES ({counter}, '{i['token']}', '{i['age']}', '{i['marketCap']}');"
+                    "INSERT INTO newtb (tokenID, tokenname, tokenage, tokenmcap, mcap_unit, age_unit) " \
+                    f"VALUES ({counter}, '{token_name}', '{age}', '{mcap}', '{mcap_unit}', '{age_unit}');"
                 )
                 counter+=1
 
@@ -163,7 +167,7 @@ async def open_page(page, browser):
 
     await manipul(page)
 
-    for i in range(2, 50):
+    for i in range(2, 51):
         url = URL.split('?')
         url[0] += '/page-'+str(i)
         url = '?'.join(url)
