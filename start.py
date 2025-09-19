@@ -117,24 +117,53 @@ async def manipul(page):
     }))
     """)
     
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            counter = 1
-            for i in data[:100]:
-                print(f'{i['token']} - {i['marketCap']} - {i['age']}')
-                token_name = i['token']
-                age, age_unit = re.match(r"(\d+)([a-zA-Z]+)", f'{i['age']}').groups()
-                mcap, mcap_unit = re.match(r"([\d\.]+)([a-zA-Z]+)", i['marketCap'][1:]).groups()
-                cur.execute(
-                    "INSERT INTO newtb (tokenID, tokenname, tokenage, tokenmcap, mcap_unit, age_unit) " \
-                    f"VALUES ({counter}, '{token_name}', '{age}', '{mcap}', '{mcap_unit}', '{age_unit}');"
-                )
-                counter+=1
+    with get_conn() as conn, conn.cursor() as cur:
+        query = "insert into newtb (tokenname, tokenage, tokenmcap) values (%s, %s, %s)"
+        list_of_tuple = []
 
-    # return
-    
-    # for i in data:
-    #     print(f'{i['token']} - {i['marketCap']} - {i['age']}')
+        for i in data:
+            params = []
+
+            # Вывод вносимой инфы
+            print(f"{i['token']} - {i['marketCap']} - {i['age']}")
+            token_name = i['token'].lower()
+            params.append(token_name)
+
+            # Проверка на наход возраста
+            age_match = re.match(r"(\d+)([a-zA-Z]+)", f'{i['age']}')
+            if not age_match:
+                continue
+            age, age_unit = age_match.groups()
+
+            # Приведение возраста к единому формату (дни)
+            age = int(age)
+            if age_unit == 'mo':
+                age = age * 30
+            elif age_unit == 'y':
+                age = age * 365
+            params.append(age)
+
+            # Проверка на наход капитализации
+            mcap_match = re.match(r"([\d\.]+)([a-zA-Z]+)", i['marketCap'][1:])
+            if not mcap_match:
+                continue
+            mcap, mcap_unit = mcap_match.groups()
+            
+            # Приведение капитализации к единому формату
+            mcap = float(mcap)
+            if mcap_unit == 'K':
+                mcap = mcap * 1000
+            elif mcap_unit == 'M':
+                mcap = mcap * 1000000
+            elif mcap_unit == 'B':
+                mcap = mcap * 1000000000
+            params.append(int(mcap))
+
+            list_of_tuple.append(tuple(params))
+
+        cur.executemany(query, list_of_tuple)
+        
+        conn.commit()
         
 
 async def start_browser():
@@ -179,4 +208,6 @@ async def open_page(page, browser):
     
     await browser.close()
 
-asyncio.run(start_browser())
+
+if __name__ == "__main__":
+    asyncio.run(start_browser())
