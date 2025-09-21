@@ -1,4 +1,3 @@
-from enum import Enum
 from start import get_conn
 from fastapi import FastAPI
 from pydantic import BaseModel

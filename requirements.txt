@@ -1,0 +1,9 @@
+fastapi
+pydantic
+requests
+aiohttp
+pyppeteer
+psycopg2-binary
+python-dotenv
+colorama
+uvicorn
