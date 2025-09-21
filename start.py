@@ -187,18 +187,29 @@ async def open_page(page, browser):
         page, 
         "//div[contains(@class, 'chakra-stack custom-tyhwsl')]",
         True,
-        get_text=True
+        get_text=True,
+        attempts=100
     ) # Like a ,,Showing pairs 1-100 of 60,746,,
 
     amount_of_pages = int(''.join([x for x in text_of_pairs.split(' ')[4] if x.isdigit()]))//100+1
     
     print(amount_of_pages)
+    while True:
+        try:
+            num = int(input(f"Введите колво обрабатываемых страниц (от 1 до {amount_of_pages}): "))
+        except:
+            print("Ошибка ввода")
+        finally:
+            if num <= amount_of_pages and num >= 1:
+                break
+            else:
+                continue
 
     await manipul(page)
 
-    for i in range(2, 51):
+    for i in range(1, num):
         url = URL.split('?')
-        url[0] += '/page-'+str(i)
+        url[0] += '/page-'+str(i+1)
         url = '?'.join(url)
 
         page.setDefaultNavigationTimeout(0)

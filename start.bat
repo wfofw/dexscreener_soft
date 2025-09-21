@@ -9,8 +9,6 @@ set "VENV=.venv"
 set "PY=%VENV%\Scripts\python.exe"
 set "PIP=%VENV%\Scripts\pip.exe"
 
-echo [*] CD=%CD%
-echo [*] PROJ=%PROJ%
 
 if not exist "%PY%" (
   echo [*] Creating venv...
@@ -20,8 +18,6 @@ if not exist "%PY%" (
 echo [*] Upgrading pip...
 "%PY%" -m pip install --upgrade pip >nul || goto :fail_reqs
 
-echo [*] Files in PROJ:
-dir /b "%PROJ%"
 
 set "REQ=%PROJ%requirements.txt"
 if exist "%REQ%" (
@@ -55,11 +51,14 @@ start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" ^
   --user-data-dir="C:\chrome-profile"
 
 :: ===== Запуск скриптов =====
-echo [*] Running: intro.py
 "%PY%" intro.py || goto :fail_app
 
 echo [*] Running: start.py
 "%PY%" start.py || goto :fail_app
+
+echo
+echo [*] Starting FastAPI on http://127.0.0.1:8000
+"%PY%" -m uvicorn fast:app --host 127.0.0.1 --port 8000 --reload
 
 echo.
 echo [OK] Done.
