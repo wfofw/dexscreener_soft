@@ -25,38 +25,38 @@ def get_conn():
 
 async def find_element(page_or_frame, selector, is_xpath=False, attempts=15, delay=1, click=False, get_text=False, get_all_matches=False, index=0, wait_time=1.5):
     """
-    Универсальная функция для поиска и взаимодействия с элементом.
+    A universal function for searching and interacting with an element.
 
-    :param page_or_frame: страница или фрейм
-    :param selector: CSS-селектор или XPath
-    :param is_xpath: если True, используется XPath, иначе — CSS-селектор
-    :param attempts: количество попыток найти элемент
-    :param delay: задержка между попытками в секундах
-    :param click: если True, будет клик по элементу
-    :param get_text: если True, вернет текст элемента
-    :param get_all_matches: усли True, вернет все найденные совпадения
-    :param index: индекс элемента в случае, если найдено несколько
-    :param wait_time: ожидание после клика (в секундах)
-    :return: найденный элемент или None
+    :param page_or_frame: page or frame
+    :param selector: CSS selector or XPath
+    :param is_xpath: If True, XPath is used, otherwise, a CSS selector is used.
+    :param attempts: number of attempts to find an element
+    :param delay: delay between attempts in seconds
+    :param click: If True, there will be a click on the element
+    :param get_text: If True, returns the text of the element.
+    :param get_all_matches: If True, it will return all matches found.
+    :param index: индекс element if several are found
+    :param wait_time: wait after click (in seconds)
+    :return: the found element or None
     """
-    logger.info(f"🔍 Начинаем поиск элемента: {selector} (попыток: {attempts})")
+    logger.info(f"🔍 Element search: {selector} (attempts: {attempts})")
 
     for attempt in range(attempts):
         try:
-            logger.info(f"🔄 Попытка {attempt + 1}/{attempts}...")
+            logger.info(f"🔄 Attempt {attempt + 1}/{attempts}...")
 
-            # Ищем элементы
+            # Element search
             if is_xpath:
                 elements = await page_or_frame.xpath(selector)
             else:
                 elements = await page_or_frame.querySelectorAll(selector)
 
             if elements:
-                logger.info(f"✅ Элемент найден на попытке {attempt + 1}!")
+                logger.info(f"✅ Element found on attempt {attempt + 1}!")
 
-                # Если True, возвращает все найденные элементы
+                # If True, returns all found elements.
                 if get_all_matches:
-                    logger.info("✅ Вернули все элементы.")
+                    logger.info("✅ All items returned.")
                     # return elements
                     
                     if get_text:
@@ -64,20 +64,20 @@ async def find_element(page_or_frame, selector, is_xpath=False, attempts=15, del
                         return list_of_texts
                     else:
                         return elements
-                # Проверяем есть ли элемент с указанным индесом
+                # We check if there is an element with the specified index
                 elif len(elements) > index and index >= 0:
                     element = elements[index]
-                    # Если требуется клик — кликаем
+                    # If a click is required, click
                     if click:
-                        logger.info(f"🔘 Выполняем клик по элементу [{index}]...")
+                        logger.info(f"🔘 Click on the element [{index}]...")
                         await element.click()
-                        logger.info("✅ Клик выполнен.")
+                        logger.info("✅ Click done.")
                         await asyncio.sleep(wait_time)                                                                                        
                     
                     if get_text:
-                        logger.info(f"🔘 Получаем текст...")
+                        logger.info(f"🔘 Getting the text...")
                         prop = await element.getProperty("innerText")
-                        logger.info("✅ Текст получен.")
+                        logger.info("✅ Text received.")
                         return await prop.jsonValue()
                     
                     return element
@@ -85,16 +85,16 @@ async def find_element(page_or_frame, selector, is_xpath=False, attempts=15, del
                     logger.error(f"❌ Index out of range.")
                     raise IndexError
                 else:
-                    logger.error(f"❌ Элемент {selector} не найден среди {len(elements)} найденных.")
+                    logger.error(f"❌ Element {selector} not found among {len(elements)} found.")
                     return False
 
-            # Ожидание перед следующей попыткой
+            # Waiting before next attempt
             await asyncio.sleep(delay)
 
         except Exception as e:
-            logger.warning(f"⚠️ Ошибка поиска на попытке {attempt + 1}: {e}")
+            logger.warning(f"⚠️ Search error on attempt {attempt + 1}: {e}")
     
-    logger.error("❌ Элемент не найден после всех попыток.")
+    logger.error("❌ Element not found after all attempts.")
     return False
 
 
@@ -124,18 +124,18 @@ async def manipul(page):
         for i in data:
             params = []
 
-            # Вывод вносимой инфы
+            # Output of entered information
             print(f"{i['token']} - {i['marketCap']} - {i['age']}")
             token_name = i['token'].lower()
             params.append(token_name)
 
-            # Проверка на наход возраста
+            # Age verification
             age_match = re.match(r"(\d+)([a-zA-Z]+)", f'{i['age']}')
             if not age_match:
                 continue
             age, age_unit = age_match.groups()
 
-            # Приведение возраста к единому формату (дни)
+            # Converting age to a standard format (days)
             age = int(age)
             if age_unit == 'mo':
                 age = age * 30
@@ -143,13 +143,13 @@ async def manipul(page):
                 age = age * 365
             params.append(age)
 
-            # Проверка на наход капитализации
+            # Check for capitalization
             mcap_match = re.match(r"([\d\.]+)([a-zA-Z]+)", i['marketCap'][1:])
             if not mcap_match:
                 continue
             mcap, mcap_unit = mcap_match.groups()
             
-            # Приведение капитализации к единому формату
+            # Bringing capitalization to a unified format
             mcap = float(mcap)
             if mcap_unit == 'K':
                 mcap = mcap * 1000
@@ -196,24 +196,25 @@ async def open_page(page, browser):
     print(amount_of_pages)
     while True:
         try:
-            num = int(input(f"Введите колво обрабатываемых страниц (от 1 до {amount_of_pages}): "))
-        except:
-            print("Ошибка ввода")
-        finally:
+            num = int(input(f"Enter the number of pages to process (from 1 to {amount_of_pages}): "))
             if num <= amount_of_pages and num >= 1:
                 break
             else:
                 continue
+        except:
+            print("Input error")
 
     await manipul(page)
 
     for i in range(1, num):
-        url = URL.split('?')
-        url[0] += '/page-'+str(i+1)
-        url = '?'.join(url)
+        base_url, query_params = URL.split('?', 1) if '?' in URL else (URL, '')
+        
+        new_url = f"{base_url}/page-{i+1}"
+        if query_params:
+            new_url += f"?{query_params}"
 
         page.setDefaultNavigationTimeout(0)
-        await page.goto(url, {'waitUntil': 'domcontentloaded'})
+        await page.goto(new_url, {'waitUntil': 'domcontentloaded'})
 
         await manipul(page)
     

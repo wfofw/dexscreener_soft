@@ -44,14 +44,13 @@ if exist config.env (
 if "%CHROME_PORT%"=="" set "CHROME_PORT=11912"
 echo [*] CHROME_PORT=%CHROME_PORT%
 
-:: ===== Chrome DevTools только локально =====
+:: ===== Chrome DevTools (only local) =====
 start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" ^
   --remote-debugging-port=%CHROME_PORT% ^
   --remote-debugging-address=127.0.0.1 ^
   --user-data-dir="C:\chrome-profile"
 
-:: ===== Запуск скриптов =====
-"%PY%" intro.py || goto :fail_app
+:: ===== Scripts starting =====
 
 echo [*] Running: start.py
 "%PY%" start.py || goto :fail_app
